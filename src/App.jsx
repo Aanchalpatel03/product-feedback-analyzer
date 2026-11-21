@@ -13,6 +13,7 @@ import AiCopilotModal from './components/AiCopilotModal';
 import PrdExportModal from './components/PrdExportModal';
 import CsvImporterModal from './components/CsvImporterModal';
 import JiraTicketModal from './components/JiraTicketModal';
+import LiveSourceModal from './components/LiveSourceModal';
 
 import { companiesData } from './data/multiCompanyDatasets';
 import { Sparkles, Download, ArrowRight, Zap, Radio, BellRing } from 'lucide-react';
@@ -74,6 +75,7 @@ export default function App() {
   const [isCopilotModalOpen, setIsCopilotModalOpen] = useState(false);
   const [isPrdModalOpen, setIsPrdModalOpen] = useState(false);
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+  const [isLiveSourceModalOpen, setIsLiveSourceModalOpen] = useState(false);
   const [selectedJiraFeature, setSelectedJiraFeature] = useState(null);
 
   // Live Streaming Simulator
@@ -199,6 +201,7 @@ export default function App() {
         onOpenCopilot={() => setIsCopilotModalOpen(true)}
         onOpenPrd={() => setIsPrdModalOpen(true)}
         onOpenCsvImport={() => setIsCsvModalOpen(true)}
+        onOpenLiveConnect={() => setIsLiveSourceModalOpen(true)}
         totalFeedbackCount={feedbackList.length}
         selectedCompany={selectedCompany}
         onSelectCompany={handleSelectCompany}
@@ -226,48 +229,53 @@ export default function App() {
             <MetricsOverview
               feedbackList={feedbackList}
               backlogList={backlogList}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+              onOpenLiveConnect={() => setIsLiveSourceModalOpen(true)}
+              onOpenJiraTicket={(feat) => setSelectedJiraFeature(feat)}
             />
 
             {/* Interactive Data Visualizations Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <SentimentVelocityChart />
-              <ChannelDonutChart />
+              <ChannelDonutChart feedbackList={feedbackList} />
             </div>
 
             {/* Quick Action Banner */}
-            <div className="glass-panel p-6 bg-gradient-to-r from-brand-600/10 via-indigo-600/10 to-transparent border-brand-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="p-1 rounded bg-brand-500 text-white">
-                    <Zap className="h-4 w-4" />
-                  </span>
-                  <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-                    AI Prioritization Recommendation for {selectedCompany.name}
-                  </h3>
+            {backlogList.length > 0 && (
+              <div className="glass-panel p-6 bg-gradient-to-r from-brand-600/10 via-indigo-600/10 to-transparent border-brand-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="p-1 rounded bg-brand-500 text-white">
+                      <Zap className="h-4 w-4" />
+                    </span>
+                    <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                      AI Prioritization Recommendation for {selectedCompany.name}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">
+                    Based on live customer voice signals, prioritizing <b>{backlogList[0]?.title}</b> will protect <b>${((backlogList[0]?.totalArrImpact || 0) / 1000).toFixed(0)}k</b> in recurring contract renewals.
+                  </p>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">
-                  Based on live customer voice signals, prioritizing <b>{backlogList[0]?.title}</b> will protect <b>${(backlogList[0]?.totalArrImpact / 1000).toFixed(0)}k</b> in recurring contract renewals.
-                </p>
-              </div>
 
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setActiveTab('matrix')}
-                  className="flex items-center space-x-1 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs transition shadow-sm whitespace-nowrap"
-                >
-                  <span>Explore 2x2 Matrix</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={handleExportJson}
-                  className="flex items-center space-x-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                  title="Export prioritized roadmap to JSON"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Export</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setActiveTab('matrix')}
+                    className="flex items-center space-x-1 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs transition shadow-sm whitespace-nowrap"
+                  >
+                    <span>Explore 2x2 Matrix</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={handleExportJson}
+                    className="flex items-center space-x-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    title="Export prioritized roadmap to JSON"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Export</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Quick Prioritization Snapshot */}
             <div className="glass-panel p-6">
@@ -342,6 +350,8 @@ export default function App() {
           <div className="animate-in fade-in duration-300">
             <FeedbackFeed
               feedbackList={feedbackList}
+              onOpenLiveConnect={() => setIsLiveSourceModalOpen(true)}
+              onOpenNewFeedback={() => setIsFeedbackModalOpen(true)}
             />
           </div>
         )}
@@ -399,6 +409,20 @@ export default function App() {
         isOpen={!!selectedJiraFeature}
         onClose={() => setSelectedJiraFeature(null)}
         feature={selectedJiraFeature}
+      />
+
+      <LiveSourceModal
+        isOpen={isLiveSourceModalOpen}
+        onClose={() => setIsLiveSourceModalOpen(false)}
+        onLoadLiveDataset={(data) => {
+          setFeedbackList(data.feedbacks);
+          setBacklogList(data.backlog);
+        }}
+        onClearDataset={() => {
+          setFeedbackList([]);
+          setBacklogList([]);
+        }}
+        currentSourceName={selectedCompany.name}
       />
 
     </div>

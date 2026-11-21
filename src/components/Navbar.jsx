@@ -31,7 +31,8 @@ export default function Navbar({
   onSelectCompany,
   companies,
   isStreaming,
-  onToggleStreaming
+  onToggleStreaming,
+  onOpenLiveConnect
 }) {
   const navItems = [
     { id: 'overview', label: 'Executive Overview', icon: BarChart3 },
@@ -82,6 +83,16 @@ export default function Navbar({
 
           {/* Action Tools */}
           <div className="flex items-center space-x-1.5 sm:space-x-2.5">
+
+            {/* Real Live Data Sources (GitHub / Public APIs) */}
+            <button
+              onClick={onOpenLiveConnect}
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-sm transition"
+              title="Connect real live GitHub issues or reset to a clean blank slate"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Live Sources</span>
+            </button>
             
             {/* Live Real-Time Stream Toggle */}
             <button
