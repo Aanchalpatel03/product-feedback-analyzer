@@ -11,10 +11,17 @@ export default function ChannelDonutChart() {
     { name: 'In-App NPS Micro', count: 60, percent: 4, color: '#8b5cf6', icon: Radio },
   ];
 
-  // Simple SVG donut segments
-  let cumulative = 0;
   const radius = 55;
   const circumference = 2 * Math.PI * radius;
+
+  // Pre-calculate pure SVG donut segments to avoid offset drift on re-render
+  let cumulative = 0;
+  const segments = channels.map((ch) => {
+    const strokeDasharray = `${(ch.percent / 100) * circumference} ${circumference}`;
+    const strokeDashoffset = -cumulative * circumference;
+    cumulative += ch.percent / 100;
+    return { ...ch, strokeDasharray, strokeDashoffset };
+  });
 
   return (
     <div className="glass-panel p-6 flex flex-col justify-between">
@@ -32,26 +39,20 @@ export default function ChannelDonutChart() {
         {/* SVG Donut */}
         <div className="relative w-36 h-36 flex items-center justify-center flex-shrink-0">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 140 140">
-            {channels.map((ch, idx) => {
-              const strokeDasharray = `${(ch.percent / 100) * circumference} ${circumference}`;
-              const strokeDashoffset = -cumulative * circumference;
-              cumulative += ch.percent / 100;
-
-              return (
-                <circle
-                  key={idx}
-                  cx="70"
-                  cy="70"
-                  r={radius}
-                  fill="transparent"
-                  stroke={ch.color}
-                  strokeWidth="18"
-                  strokeDasharray={strokeDasharray}
-                  strokeDashoffset={strokeDashoffset}
-                  className="transition-all duration-300 hover:opacity-80"
-                />
-              );
-            })}
+            {segments.map((seg, idx) => (
+              <circle
+                key={idx}
+                cx="70"
+                cy="70"
+                r={radius}
+                fill="transparent"
+                stroke={seg.color}
+                strokeWidth="18"
+                strokeDasharray={seg.strokeDasharray}
+                strokeDashoffset={seg.strokeDashoffset}
+                className="transition-all duration-300 hover:opacity-80"
+              />
+            ))}
           </svg>
           <div className="absolute flex flex-col items-center justify-center text-center">
             <span className="text-lg font-extrabold text-slate-900 dark:text-white">1,248</span>

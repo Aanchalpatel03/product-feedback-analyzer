@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FileText, Download, Copy, Check, Sparkles } from 'lucide-react';
+import { X, FileText, Download, Copy, Check, Sparkles, Table } from 'lucide-react';
 
 export default function PrdExportModal({ isOpen, onClose, backlogList }) {
   const [copied, setCopied] = useState(false);
@@ -47,12 +47,39 @@ ${topFeatures.map((f, i) => `### ${i+1}. ${f.title} (${f.id})
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
+  const handleDownloadMd = () => {
     const blob = new Blob([prdContent], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `PulseFlow-PRD-Q1-2027.md`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadCsv = () => {
+    const headers = ["ID", "Title", "Product Area", "RICE Score", "Reach %", "Impact", "Confidence %", "Effort (mo)", "Kano Category", "Quadrant", "ARR at Risk ($)", "Status"];
+    const rows = backlogList.map(f => [
+      f.id,
+      `"${f.title.replace(/"/g, '""')}"`,
+      f.productArea,
+      f.riceScore,
+      f.reach,
+      f.impact,
+      f.confidence,
+      f.effort,
+      f.kanoCategory,
+      f.quadrant,
+      f.totalArrImpact,
+      f.status
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `PulseFlow-Prioritized-Backlog.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -91,7 +118,7 @@ ${topFeatures.map((f, i) => `### ${i+1}. ${f.title} (${f.id})
         </div>
 
         {/* Action Footer */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="text-[11px] text-slate-400">
             Ready for engineering backlog grooming & Jira sync
           </span>
@@ -101,10 +128,18 @@ ${topFeatures.map((f, i) => `### ${i+1}. ${f.title} (${f.id})
               className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-              <span>{copied ? 'Copied' : 'Copy Markdown'}</span>
+              <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
             <button
-              onClick={handleDownload}
+              onClick={handleDownloadCsv}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              title="Download Backlog CSV for Jira / Linear"
+            >
+              <Table className="h-4 w-4 text-emerald-500" />
+              <span>Export CSV</span>
+            </button>
+            <button
+              onClick={handleDownloadMd}
               className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition shadow-sm"
             >
               <Download className="h-4 w-4" />

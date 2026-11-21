@@ -36,9 +36,26 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Append new simulated customer feedback
+  // Append new simulated customer feedback and update corresponding backlog metrics
   const handleFeedbackAdded = (newFeedback) => {
     setFeedbackList(prev => [newFeedback, ...prev]);
+
+    setBacklogList(prev => prev.map(feat => {
+      if (feat.productArea.toLowerCase() === newFeedback.topic.toLowerCase() ||
+          feat.title.toLowerCase().includes(newFeedback.topic.toLowerCase())) {
+        return {
+          ...feat,
+          linkedFeedbackCount: feat.linkedFeedbackCount + 1,
+          totalArrImpact: feat.totalArrImpact + ((newFeedback.customer?.mrr || 5000) * 12)
+        };
+      }
+      return feat;
+    }));
+  };
+
+  // Update feature status (e.g. from Roadmap Planner Kanban)
+  const handleFeatureStatusChange = (featId, newStatus) => {
+    setBacklogList(prev => prev.map(f => f.id === featId ? { ...f, status: newStatus } : f));
   };
 
   // Export full prioritized roadmap as JSON
@@ -137,7 +154,7 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {backlogList.slice(0, 3).map((feat, idx) => (
+                {[...backlogList].sort((a, b) => b.riceScore - a.riceScore).slice(0, 3).map((feat, idx) => (
                   <div key={feat.id} className="p-4 rounded-xl bg-slate-100/70 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-mono font-bold text-slate-400">#{idx + 1} • {feat.id}</span>
@@ -176,7 +193,7 @@ export default function App() {
           <div className="animate-in fade-in duration-300">
             <RiceCalculatorTable
               backlogList={backlogList}
-              onUpdateFeature={() => {}}
+              onUpdateFeature={(updatedList) => setBacklogList(updatedList)}
             />
           </div>
         )}
@@ -201,6 +218,7 @@ export default function App() {
           <div className="animate-in fade-in duration-300">
             <RoadmapPlanner
               backlogList={backlogList}
+              onStatusChange={handleFeatureStatusChange}
             />
           </div>
         )}

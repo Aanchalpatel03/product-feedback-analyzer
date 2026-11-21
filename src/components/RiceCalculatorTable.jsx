@@ -11,29 +11,32 @@ import {
 import { calculateRice } from '../utils/prioritization';
 
 export default function RiceCalculatorTable({ backlogList, onUpdateFeature }) {
-  const [features, setFeatures] = useState(backlogList);
   const [sortField, setSortField] = useState('riceScore');
   const [sortAsc, setSortAsc] = useState(false);
-  const [editingId, setEditingId] = useState(null);
 
-  // Update feature value in local state and re-calculate RICE score
+  // Update feature value and re-calculate RICE score, propagating to global state
   const handleSliderChange = (id, field, value) => {
-    setFeatures(prev => prev.map(item => {
+    const updated = backlogList.map(item => {
       if (item.id === id) {
-        const updated = { ...item, [field]: parseFloat(value) };
-        updated.riceScore = calculateRice(
-          updated.reach,
-          updated.impact,
-          updated.confidence,
-          updated.effort
+        const val = parseFloat(value);
+        const feat = { ...item, [field]: val };
+        feat.riceScore = calculateRice(
+          feat.reach,
+          feat.impact,
+          feat.confidence,
+          feat.effort
         );
-        return updated;
+        return feat;
       }
       return item;
-    }));
+    });
+
+    if (onUpdateFeature) {
+      onUpdateFeature(updated);
+    }
   };
 
-  const sortedFeatures = [...features].sort((a, b) => {
+  const sortedFeatures = [...backlogList].sort((a, b) => {
     if (sortAsc) {
       return a[sortField] > b[sortField] ? 1 : -1;
     }
@@ -65,13 +68,13 @@ export default function RiceCalculatorTable({ backlogList, onUpdateFeature }) {
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">
-              Formula: <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-brand-500 font-bold">(Reach × Impact × Confidence %) / Effort</code>. Drag the interactive sliders below to dynamically simulate sprint trade-offs in real time.
+              Formula: <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-brand-500 font-bold">(Reach × Impact × Confidence %) / Effort</code>. Drag the interactive sliders below to dynamically simulate sprint trade-offs in real time. Changes synchronize across the 2x2 Matrix, Executive Overview, and PRD.
             </p>
           </div>
 
           <div className="flex items-center space-x-2">
             <span className="text-xs text-slate-400">
-              {features.length} Features Evaluated
+              {backlogList.length} Features Evaluated
             </span>
           </div>
         </div>
@@ -139,7 +142,7 @@ export default function RiceCalculatorTable({ backlogList, onUpdateFeature }) {
                 return (
                   <tr 
                     key={feat.id} 
-                    className={`hover:bg-slate-50 dark:hover:bg-slate-850/50 transition ${
+                    className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition ${
                       isTopRanked ? 'bg-brand-500/5 dark:bg-brand-950/20' : ''
                     }`}
                   >

@@ -17,11 +17,13 @@ export default function FeedbackFeed({ feedbackList }) {
   const [selectedChannel, setSelectedChannel] = useState('ALL');
   const [selectedSentiment, setSelectedSentiment] = useState('ALL');
   const [selectedTier, setSelectedTier] = useState('ALL');
+  const [selectedRisk, setSelectedRisk] = useState('ALL');
   const [copiedId, setCopiedId] = useState(null);
 
   const channels = ['ALL', 'Zendesk', 'Discord', 'G2 Crowd', 'App Store', 'In-App NPS', 'Gong Transcript'];
   const sentiments = ['ALL', 'Delighted', 'Positive', 'Neutral', 'Frustrated', 'Negative'];
   const tiers = ['ALL', 'Enterprise', 'Mid-Market', 'Growth', 'SMB'];
+  const risks = ['ALL', 'Critical', 'High', 'Medium', 'Low'];
 
   const filteredList = feedbackList.filter(item => {
     const matchesSearch = searchQuery === '' || 
@@ -32,8 +34,9 @@ export default function FeedbackFeed({ feedbackList }) {
     const matchesChannel = selectedChannel === 'ALL' || item.channel === selectedChannel;
     const matchesSentiment = selectedSentiment === 'ALL' || item.sentiment.label === selectedSentiment;
     const matchesTier = selectedTier === 'ALL' || item.customer.tier === selectedTier;
+    const matchesRisk = selectedRisk === 'ALL' || item.churnRisk === selectedRisk;
 
-    return matchesSearch && matchesChannel && matchesSentiment && matchesTier;
+    return matchesSearch && matchesChannel && matchesSentiment && matchesTier && matchesRisk;
   });
 
   const handleCopy = (id, text) => {
@@ -67,15 +70,15 @@ export default function FeedbackFeed({ feedbackList }) {
           </div>
         </div>
 
-        {/* Filter Controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+        {/* Filter Controls (5-Column Grid) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
           
           {/* Search Box */}
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search quotes, company, topic..."
+              placeholder="Search quotes, company..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-lg pl-9 pr-3 py-2 text-xs focus:ring-1 focus:ring-brand-500 focus:outline-none"
@@ -117,6 +120,19 @@ export default function FeedbackFeed({ feedbackList }) {
             >
               {tiers.map(t => (
                 <option key={t} value={t}>Tier: {t}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Churn Risk */}
+          <div>
+            <select
+              value={selectedRisk}
+              onChange={(e) => setSelectedRisk(e.target.value)}
+              className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs cursor-pointer focus:ring-1 focus:ring-brand-500 focus:outline-none"
+            >
+              {risks.map(r => (
+                <option key={r} value={r}>Churn Risk: {r}</option>
               ))}
             </select>
           </div>
