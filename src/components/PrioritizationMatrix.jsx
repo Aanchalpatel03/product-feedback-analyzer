@@ -8,10 +8,11 @@ import {
   ArrowUpRight, 
   CheckCircle2, 
   Users,
-  DollarSign
+  DollarSign,
+  Ticket
 } from 'lucide-react';
 
-export default function PrioritizationMatrix({ backlogList, onSelectFeature }) {
+export default function PrioritizationMatrix({ backlogList, onSelectFeature, onOpenJiraTicket }) {
   const [activeQuadrant, setActiveQuadrant] = useState('ALL');
   const [hoveredFeature, setHoveredFeature] = useState(backlogList[0]);
 
@@ -152,11 +153,8 @@ export default function PrioritizationMatrix({ backlogList, onSelectFeature }) {
 
             {/* Feature Plot Nodes */}
             {backlogList.map((feat) => {
-              // Map effort 0-100 to left (10% to 90%)
               const leftPercent = 8 + (feat.effortScore / 100) * 84;
-              // Map value 0-100 to bottom (10% to 90%)
               const bottomPercent = 8 + (feat.valueScore / 100) * 84;
-
               const isSelected = hoveredFeature?.id === feat.id;
 
               let nodeColorClass = 'bg-brand-500 shadow-brand-500/50';
@@ -254,9 +252,20 @@ export default function PrioritizationMatrix({ backlogList, onSelectFeature }) {
                 </div>
 
                 <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 pt-1">
-                  <span>Linked Customer Feedback Signals: <b>{hoveredFeature.linkedFeedbackCount} verified quotes</b></span>
+                  <span>Linked Signals: <b>{hoveredFeature.linkedFeedbackCount} verified quotes</b></span>
                   <span>Target: <b className="text-slate-800 dark:text-slate-200">{hoveredFeature.targetQuarter}</b></span>
                 </div>
+              </div>
+
+              {/* Jira / Linear Ticket Trigger Button */}
+              <div className="pt-2">
+                <button
+                  onClick={() => onOpenJiraTicket && onOpenJiraTicket(hoveredFeature)}
+                  className="w-full flex items-center justify-center space-x-1.5 py-2 px-3 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 font-bold text-xs transition"
+                >
+                  <Ticket className="h-3.5 w-3.5" />
+                  <span>Generate Jira / Linear Sprint Ticket</span>
+                </button>
               </div>
 
             </div>

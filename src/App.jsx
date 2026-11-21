@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import MetricsOverview from './components/MetricsOverview';
 import SentimentVelocityChart from './components/SentimentVelocityChart';
@@ -11,21 +11,85 @@ import RoadmapPlanner from './components/RoadmapPlanner';
 import LiveFeedbackModal from './components/LiveFeedbackModal';
 import AiCopilotModal from './components/AiCopilotModal';
 import PrdExportModal from './components/PrdExportModal';
+import CsvImporterModal from './components/CsvImporterModal';
+import JiraTicketModal from './components/JiraTicketModal';
 
-import { initialFeedbackData } from './data/feedbackData';
-import { initialFeatureBacklog } from './data/featureBacklog';
-import { Sparkles, Download, ArrowRight, Zap, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { companiesData } from './data/multiCompanyDatasets';
+import { Sparkles, Download, ArrowRight, Zap, Radio, BellRing } from 'lucide-react';
+import confetti from 'canvas-confetti';
+
+// Pool of streaming events for real-time live ingestion
+const STREAMING_EVENTS_POOL = [
+  {
+    name: "Vikram Malhotra",
+    company: "Zeta Networks",
+    tier: "Enterprise",
+    mrr: 19500,
+    channel: "Zendesk",
+    text: "Our security compliance audit is due next week. We cannot allow non-SSO logins across our 180 seats.",
+    topic: "Auth & Security"
+  },
+  {
+    name: "Chloe Bourgeois",
+    company: "DesignCo Europe",
+    tier: "Growth",
+    mrr: 3200,
+    channel: "Discord",
+    text: "Can we get high contrast dark mode for OLED screens? The current theme is slightly too bright in pitch dark rooms.",
+    topic: "UI/UX & Mobile"
+  },
+  {
+    name: "Liam Foster",
+    company: "Quantum Analytics",
+    tier: "Mid-Market",
+    mrr: 7500,
+    channel: "G2 Crowd",
+    text: "The export crashed when pulling 80,000 transaction rows. Please add asynchronous background S3 export!",
+    topic: "Performance & Speed"
+  },
+  {
+    name: "Samantha Reed",
+    company: "Acuity Financial",
+    tier: "Enterprise",
+    mrr: 31000,
+    channel: "Gong Transcript",
+    text: "We need webhook exponential backoff retry. When our gateway experiences network lag, we drop critical transaction logs.",
+    topic: "API & Webhooks"
+  }
+];
 
 export default function App() {
+  const [selectedCompanyId, setSelectedCompanyId] = useState('pulseflow');
+  const selectedCompany = companiesData[selectedCompanyId];
+
   const [activeTab, setActiveTab] = useState('overview');
   const [darkMode, setDarkMode] = useState(true);
-  const [feedbackList, setFeedbackList] = useState(initialFeedbackData);
-  const [backlogList, setBacklogList] = useState(initialFeatureBacklog);
+  
+  // Datasets
+  const [feedbackList, setFeedbackList] = useState(companiesData.pulseflow.feedbacks);
+  const [backlogList, setBacklogList] = useState(companiesData.pulseflow.backlog);
 
   // Modals
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [isCopilotModalOpen, setIsCopilotModalOpen] = useState(false);
   const [isPrdModalOpen, setIsPrdModalOpen] = useState(false);
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+  const [selectedJiraFeature, setSelectedJiraFeature] = useState(null);
+
+  // Live Streaming Simulator
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamToast, setStreamToast] = useState(null);
+  const streamIndexRef = useRef(0);
+
+  // Switch Company
+  const handleSelectCompany = (companyId) => {
+    setSelectedCompanyId(companyId);
+    const target = companiesData[companyId];
+    if (target) {
+      setFeedbackList(target.feedbacks);
+      setBacklogList(target.backlog);
+    }
+  };
 
   // Handle Dark Mode toggling
   useEffect(() => {
@@ -36,7 +100,48 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Append new simulated customer feedback and update corresponding backlog metrics
+  // Live streaming simulator loop (runs every 7 seconds when active)
+  useEffect(() => {
+    let interval = null;
+    if (isStreaming) {
+      interval = setInterval(() => {
+        const item = STREAMING_EVENTS_POOL[streamIndexRef.current % STREAMING_EVENTS_POOL.length];
+        streamIndexRef.current++;
+
+        const newFeedback = {
+          id: `STR-${Math.floor(1000 + Math.random() * 9000)}`,
+          customer: {
+            name: item.name,
+            company: item.company,
+            tier: item.tier,
+            mrr: item.mrr,
+            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+          },
+          channel: item.channel,
+          date: new Date().toISOString(),
+          text: item.text,
+          sentiment: { score: -0.6, label: "Frustrated" },
+          intent: "Feature Request",
+          topic: item.topic,
+          mappedFeature: item.topic,
+          urgency: "High",
+          churnRisk: item.tier === 'Enterprise' ? 'Critical' : 'Medium',
+          verified: true
+        };
+
+        setFeedbackList(prev => [newFeedback, ...prev]);
+        setStreamToast(`Live Signal Ingested: ${item.company} (${item.channel})`);
+
+        setTimeout(() => {
+          setStreamToast(null);
+        }, 3500);
+
+      }, 7000);
+    }
+    return () => clearInterval(interval);
+  }, [isStreaming]);
+
+  // Append new simulated customer feedback
   const handleFeedbackAdded = (newFeedback) => {
     setFeedbackList(prev => [newFeedback, ...prev]);
 
@@ -53,8 +158,20 @@ export default function App() {
     }));
   };
 
+  // Batch CSV imported feedbacks
+  const handleBatchImport = (importedItems) => {
+    setFeedbackList(prev => [...importedItems, ...prev]);
+  };
+
   // Update feature status (e.g. from Roadmap Planner Kanban)
   const handleFeatureStatusChange = (featId, newStatus) => {
+    if (newStatus === 'Shipped') {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
     setBacklogList(prev => prev.map(f => f.id === featId ? { ...f, status: newStatus } : f));
   };
 
@@ -63,7 +180,7 @@ export default function App() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backlogList, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", "pulseflow_prioritized_roadmap.json");
+    downloadAnchor.setAttribute("download", `${selectedCompany.id}_prioritized_roadmap.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -81,8 +198,22 @@ export default function App() {
         onOpenNewFeedback={() => setIsFeedbackModalOpen(true)}
         onOpenCopilot={() => setIsCopilotModalOpen(true)}
         onOpenPrd={() => setIsPrdModalOpen(true)}
+        onOpenCsvImport={() => setIsCsvModalOpen(true)}
         totalFeedbackCount={feedbackList.length}
+        selectedCompany={selectedCompany}
+        onSelectCompany={handleSelectCompany}
+        companies={companiesData}
+        isStreaming={isStreaming}
+        onToggleStreaming={() => setIsStreaming(!isStreaming)}
       />
+
+      {/* Live Stream Notification Toast */}
+      {streamToast && (
+        <div className="fixed bottom-6 right-6 z-50 p-3.5 rounded-xl bg-slate-900/95 dark:bg-slate-800/95 text-white text-xs font-semibold shadow-2xl border border-brand-500/40 flex items-center space-x-2.5 animate-in slide-in-from-bottom-5">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+          <span>{streamToast}</span>
+        </div>
+      )}
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -111,11 +242,11 @@ export default function App() {
                     <Zap className="h-4 w-4" />
                   </span>
                   <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
-                    AI Prioritization Recommendation for Upcoming Sprint
+                    AI Prioritization Recommendation for {selectedCompany.name}
                   </h3>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">
-                  Based on 1,248 feedback signals across Zendesk & Discord, prioritizing <b>FEAT-201 (SAML SSO)</b> will unblock <b>$142,000</b> in immediate enterprise contract renewals.
+                  Based on live customer voice signals, prioritizing <b>{backlogList[0]?.title}</b> will protect <b>${(backlogList[0]?.totalArrImpact / 1000).toFixed(0)}k</b> in recurring contract renewals.
                 </p>
               </div>
 
@@ -185,6 +316,7 @@ export default function App() {
             <PrioritizationMatrix
               backlogList={backlogList}
               onSelectFeature={(feat) => {}}
+              onOpenJiraTicket={(feat) => setSelectedJiraFeature(feat)}
             />
           </div>
         )}
@@ -229,7 +361,7 @@ export default function App() {
       <footer className="border-t border-slate-200 dark:border-slate-800/80 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>
-            <b>FeedbackPulse AI</b> — Built with React, Tailwind CSS, Python NLP & Prioritization Algorithms.
+            <b>FeedbackPulse AI</b> — Multi-Tenant Customer Voice & Prioritization Engine.
           </p>
           <div className="flex items-center space-x-4 text-[11px]">
             <span>Portfolio Demo by <b>Aanchal Patel</b></span>
@@ -255,6 +387,18 @@ export default function App() {
         isOpen={isPrdModalOpen}
         onClose={() => setIsPrdModalOpen(false)}
         backlogList={backlogList}
+      />
+
+      <CsvImporterModal
+        isOpen={isCsvModalOpen}
+        onClose={() => setIsCsvModalOpen(false)}
+        onImportBatch={handleBatchImport}
+      />
+
+      <JiraTicketModal
+        isOpen={!!selectedJiraFeature}
+        onClose={() => setSelectedJiraFeature(null)}
+        feature={selectedJiraFeature}
       />
 
     </div>
